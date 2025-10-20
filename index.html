@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory Match Game</title>
+<style>
+  body { margin:0; font-family: sans-serif; background: linear-gradient(to bottom, #bfdbfe, #60a5fa); display:flex; flex-direction: column; align-items:center; justify-content:center; min-height:100vh; }
+  .mmg-card { width: 64px; height: 64px; perspective: 1000px; }
+  .mmg-cardInner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.6s; }
+  .mmg-cardInner.flipped { transform: rotateY(180deg); }
+  .mmg-cardFace { position: absolute; inset: 0; display:flex; align-items:center; justify-content:center; border-radius:12px; backface-visibility: hidden; font-weight:700; font-size:1.25rem; }
+  .mmg-cardFront { background: #1e3a8a; color: white; }
+  .mmg-cardBack { transform: rotateY(180deg); display:flex; align-items:center; justify-content:center; border-radius:12px; font-weight:700; font-size:1.25rem; background:white; color:black; }
+  .mmg-grid { display: grid; gap:12px; }
+  .popup { position: absolute; inset:0; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.5); z-index: 50; }
+  .popupContent { background:white; padding:16px; border-radius:12px; text-align:center; }
+  .playerInput { width:80px; text-align:center; padding:4px; border-radius:4px; }
+  .scoreBox { padding:4px 8px; border-radius:8px; color:white; margin:0 4px; }
+  .turnIndicator { margin-top: 8px; font-weight: bold; font-size: 1.1rem; }
+  button { padding:8px 16px; border:none; border-radius:8px; background:#2563eb; color:white; cursor:pointer; }
+</style>
+</head>
+<body>
+<h1>Memory Match Game</h1>
+<div>
+  Player 1: <input id="player1Name" class="playerInput" value="Player 1">
+  vs
+  Player 2: <input id="player2Name" class="playerInput" value="Player 2">
+</div>
+<div style="margin:8px; display:flex; align-items:center;">
+  <span id="score1" class="scoreBox" style="background:#f87171">0</span>
+  <span id="score2" class="scoreBox" style="background:#34d399">0</span>
+</div>
+<div id="turnIndicator" class="turnIndicator">Turn: Player 1</div>
+<div id="gameGrid" class="mmg-grid"></div>
+<div id="popup" class="popup">
+  <div class="popupContent">
+    <h2 id="popupTitle">Memory Match Game</h2>
+    <p>Choose number of pairs and click start</p>
+    <select id="numPairsSelect">
+      <option value="6">6 (12 tiles)</option>
+      <option value="8">8 (16 tiles)</option>
+      <option value="10">10 (20 tiles)</option>
+      <option value="12" selected>12 (24 tiles)</option>
+    </select>
+    <br><br>
+    <button id="startBtn">Start / Restart</button>
+  </div>
+</div>
+<script>
+(() => {
+  let tiles = [];
+  let flipped = [];
+  let matched = [];
+  let turn = 1;
+  let scores = {1:0,2:0};
+  let numPairs = 12;
+  const playerColors = {1:'#f87171',2:'#34d399'};
+
+  const grid = document.getElementById('gameGrid');
+  const popup = document.getElementById('popup');
+  const popupTitle = document.getElementById('popupTitle');
+  const startBtn = document.getElementById('startBtn');
+  const numPairsSelect = document.getElementById('numPairsSelect');
+  const player1Input = document.getElementById('player1Name');
+  const player2Input = document.getElementById('player2Name');
+  const score1 = document.getElementById('score1');
+  const score2 = document.getElementById('score2');
+  const turnIndicator = document.getElementById('turnIndicator');
+
+  function makeTiles(pairs) {
+    const vals = Array.from({length:pairs}, (_,i)=>i+1);
+    let list = [...vals,...vals].map(v => ({id: v + '-' + Math.random(), value:v}));
+    list.sort(()=>Math.random()-0.5);
+    return list;
+  }
+
+  function renderGrid() {
+    grid.innerHTML='';
+    const cols = Math.ceil(Math.sqrt(numPairs*2));
+    grid.style.gridTemplateColumns = `repeat(${cols}, 64px)`;
+    tiles.forEach(tile => {
+      const card = document.createElement('div');
+      card.className='mmg-card';
+      card.dataset.id = tile.id;
+      card.innerHTML=`<div class='mmg-cardInner'><div class='mmg-cardFace mmg-cardFront'></div><div class='mmg-cardFace mmg-cardBack'>${tile.value}</div></div>`;
+      grid.appendChild(card);
+      card.onclick = () => handleClick(tile.id, card);
+    });
+  }
+
+  function handleClick(id, card) {
+    if(flipped.includes(id) || matched.includes(id)) return;
+    const inner = card.querySelector('.mmg-cardInner');
+    inner.classList.add('flipped');
+    flipped.push(id);
+    if(flipped.length===2){
+      const [a,b] = flipped;
+      const valA = tiles.find(t=>t.id===a).value;
+      const valB = tiles.find(t=>t.id===b).value;
+      if(valA===valB){
+        matched.push(a,b);
+        updateScores(turn);
+        [...grid.children].forEach(ch => {
+          const back = ch.querySelector('.mmg-cardBack');
+          const innerDiv = ch.querySelector('.mmg-cardInner');
+          if(back.innerText == valA) {
+            back.style.background = playerColors[turn];
+            back.style.color = 'white';
+            innerDiv.classList.add('flipped');
+          }
+        });
+        setTimeout(()=>{flipped=[]; checkWin();},600);
+      } else {
+        setTimeout(()=>{
+          [...grid.children].forEach(ch=>{
+            const chId = tiles.find(t => t.value == ch.querySelector('.mmg-cardBack').innerText).id;
+            if(!matched.includes(chId)) {
+              ch.querySelector('.mmg-cardInner').classList.remove('flipped');
+            }
+          });
+          flipped=[];
+          turn = turn===1?2:1;
+          updateTurnIndicator();
+        },900);
+      }
+    }
+  }
+
+  function updateScores(player){
+    scores[player]++;
+    score1.innerText = scores[1];
+    score2.innerText = scores[2];
+  }
+
+  function updateTurnIndicator(){
+    turnIndicator.innerText = `Turn: ${turn===1?player1Input.value:player2Input.value}`;
+  }
+
+  function checkWin(){
+    if(matched.length===tiles.length){
+      let msg='';
+      if(scores[1]>scores[2]) msg=`${player1Input.value} Wins! 🏆`;
+      else if(scores[2]>scores[1]) msg=`${player2Input.value} Wins! 🏆`;
+      else msg="It's a Tie! 🤝";
+      popupTitle.innerText = msg;
+      popup.style.display='flex';
+    }
+  }
+
+  startBtn.onclick = ()=>{
+    numPairs = Number(numPairsSelect.value);
+    tiles = makeTiles(numPairs);
+    flipped = [];
+    matched = [];
+    turn = 1;
+    scores = {1:0,2:0};
+    score1.innerText = 0;
+    score2.innerText = 0;
+    renderGrid();
+    updateTurnIndicator();
+    popup.style.display='none';
+  };
+})();
+</script>
+</body>
+</html>
