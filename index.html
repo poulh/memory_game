@@ -78,7 +78,7 @@
 
   function renderGrid() {
     grid.innerHTML='';
-    const cols = Math.ceil(Math.sqrt(numPairs*2));
+    const cols = Math.min(4,Math.ceil(Math.sqrt(numPairs*2)))
     grid.style.gridTemplateColumns = `repeat(${cols}, 64px)`;
     tiles.forEach(tile => {
       const card = document.createElement('div');
