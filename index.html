@@ -171,8 +171,10 @@
       if(scores[1]>scores[2]) msg=`${player1Input.value} Wins! 🏆`;
       else if(scores[2]>scores[1]) msg=`${player2Input.value} Wins! 🏆`;
       else msg="It's a Tie! 🤝";
-      popupTitle.innerText = msg;
-      popup.style.display='flex';
+      setTimeout(() => {
+        popupTitle.innerText = msg;
+        popup.style.display='flex';
+      }, 1000);
     }
   }
 
