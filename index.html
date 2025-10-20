@@ -15,24 +15,35 @@
   .mmg-grid { display: grid; gap:12px; }
   .popup { position: absolute; inset:0; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.5); z-index: 50; }
   .popupContent { background:white; padding:16px; border-radius:12px; text-align:center; }
-  .playerInput { width:80px; text-align:center; padding:4px; border-radius:4px; }
-  .scoreBox { padding:4px 8px; border-radius:8px; color:white; margin:0 4px; }
-  .turnIndicator { margin-top: 8px; font-weight: bold; font-size: 1.1rem; }
+  .playerInput { width:110px; text-align:center; padding:6px 8px; border-radius:6px; border:none; background:transparent; color:inherit; font-weight:600; }
+  .scoreBox { padding:6px 10px; border-radius:12px; color:white; margin:0 4px; font-weight:700; min-width:36px; text-align:center; }
   button { padding:8px 16px; border:none; border-radius:8px; background:#2563eb; color:white; cursor:pointer; }
+  /* New layout styles */
+  .headerRow { display:flex; gap:12px; align-items:center; margin-bottom:12px; }
+  .playerBox { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:12px; color:white; min-width:180px; justify-content:center; }
+  .vsText { font-weight:700; color:#1f2937; }
+  /* make inputs blend into playerBox */
+  .playerBox input.playerInput { background: transparent; border: none; outline: none; padding:0; width:100px; color:inherit; font-weight:700; }
 </style>
 </head>
 <body>
 <h1>Memory Match Game</h1>
-<div>
-  Player 1: <input id="player1Name" class="playerInput" value="Player 1">
-  vs
-  Player 2: <input id="player2Name" class="playerInput" value="Player 2">
+
+<!-- combined header row: player boxes, vs, and turn indicator -->
+<div class="headerRow" style="width:fit-content;">
+  <div id="player1Box" class="playerBox" style="background:#f87171;">
+    <input id="player1Name" class="playerInput" value="Player 1">
+    <span id="score1" class="scoreBox" style="background:#ffffff00; color:white;">0</span>
+  </div>
+
+  <div class="vsText">vs</div>
+
+  <div id="player2Box" class="playerBox" style="background:#34d399;">
+    <input id="player2Name" class="playerInput" value="Player 2">
+    <span id="score2" class="scoreBox" style="background:#ffffff00; color:white;">0</span>
+  </div>
 </div>
-<div style="margin:8px; display:flex; align-items:center;">
-  <span id="score1" class="scoreBox" style="background:#f87171">0</span>
-  <span id="score2" class="scoreBox" style="background:#34d399">0</span>
-</div>
-<div id="turnIndicator" class="turnIndicator">Turn: Player 1</div>
+
 <div id="gameGrid" class="mmg-grid"></div>
 <div id="popup" class="popup">
   <div class="popupContent">
@@ -57,6 +68,7 @@
   let scores = {1:0,2:0};
   let numPairs = 12;
   const playerColors = {1:'#f87171',2:'#34d399'};
+  const inactiveColor = '#9ca3af';
 
   const grid = document.getElementById('gameGrid');
   const popup = document.getElementById('popup');
@@ -67,7 +79,8 @@
   const player2Input = document.getElementById('player2Name');
   const score1 = document.getElementById('score1');
   const score2 = document.getElementById('score2');
-  const turnIndicator = document.getElementById('turnIndicator');
+  const player1Box = document.getElementById('player1Box');
+  const player2Box = document.getElementById('player2Box');
 
   function makeTiles(pairs) {
     const vals = Array.from({length:pairs}, (_,i)=>i+1);
@@ -135,7 +148,21 @@
   }
 
   function updateTurnIndicator(){
-    turnIndicator.innerText = `Turn: ${turn===1?player1Input.value:player2Input.value}`;
+    const bg1 = turn===1 ? playerColors[1] : inactiveColor;
+    const bg2 = turn===2 ? playerColors[2] : inactiveColor;
+
+    player1Box.style.background = bg1;
+    player2Box.style.background = bg2;
+
+    // keep text readable
+    player1Box.style.color = 'white';
+    player2Box.style.color = 'white';
+
+    // scores use same color pill
+    score1.style.background = bg1;
+    score2.style.background = bg2;
+    score1.style.color = 'white';
+    score2.style.color = 'white';
   }
 
   function checkWin(){
@@ -162,6 +189,9 @@
     updateTurnIndicator();
     popup.style.display='none';
   };
+
+  // initialize colors for initial visible state
+  updateTurnIndicator();
 })();
 </script>
 </body>
